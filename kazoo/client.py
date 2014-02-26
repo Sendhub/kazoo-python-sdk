@@ -263,7 +263,7 @@ class Client(object):
     _phone_number_resource = RestResource(
         "phone_number",
         "/accounts/{account_id}/phone_numbers/{phone_number}",
-        methods=["list", "update", "delete"],
+        methods=["detail", "list", "update", "create", "delete"],
         extra_views=[
             {"name":"activate_phone_number",
              "path": "activate",
