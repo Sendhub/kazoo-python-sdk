@@ -263,7 +263,7 @@ class Client(object):
     _phone_number_resource = RestResource(
         "phone_number",
         "/accounts/{account_id}/phone_numbers/{phone_number}",
-        methods=["detail", "list", "update", "create", "delete"],
+        methods=["list", "update", "delete"],
         extra_views=[
             {"name":"activate_phone_number",
              "path": "activate",
@@ -360,11 +360,11 @@ class Client(object):
         })
         return self._execute_request(request)
 
-    #def create_phone_number(self, acct_id, phone_number):
-    #    request = KazooRequest("/accounts/{account_id}/phone_numbers/{phone_number}",
-    #                           method="put")
-    #    return self._execute_request(request,
-    #                                 account_id=acct_id, phone_number=phone_number)
+    def create_phone_number(self, acct_id, phone_number, userId):
+        request = KazooRequest("/accounts/{account_id}/phone_numbers/{phone_number}",
+                               method="put")
+        return self._execute_request(request,
+                                     account_id=acct_id, phone_number=phone_number, pvt_sendhub_id=userId)
 
     def upload_phone_number_file(self, acct_id, phone_number, filename, file_obj):
         """Uploads a file like object as part of a phone numbers documents"""
