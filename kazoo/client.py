@@ -369,12 +369,33 @@ class Client(object):
             kwargs["token"] = self.auth_token
             return request.execute(self.base_url, **kwargs)
 
-    def search_phone_numbers(self, prefix, quantity=10):
-        request = KazooRequest("/phone_numbers", get_params={
-            "prefix": prefix,
-            "quantity": quantity
-        })
+    def list_phone_numbers(self, prefix=None, quantity=None):
+        """
+        List all phone numbers in kazoo.
+        :param prefix: Optionally, filter based on phone number prefix
+        :param quantity: Optionally, include a search results limit
+        :return:
+        """
+
+        get_params = dict()
+
+        if prefix:
+            get_params['prefix'] = prefix
+
+        if quantity:
+            get_params['quantity'] = quantity
+
+        request = KazooRequest("/phone_numbers", get_params=get_params)
         return self._execute_request(request)
+
+    def search_phone_numbers(self, prefix, quantity=10):
+        """
+        Search phone numbers matching a given prefix.
+        :param prefix:filter based on phone number prefix
+        :param quantity:Optionally, include a search results limit
+        :return:
+        """
+        return self.list_phone_numbers(prefix, quantity)
 
     def create_phone_number(self, acct_id, phone_number):
         request = KazooRequest("/accounts/{account_id}/phone_numbers/{phone_number}",
