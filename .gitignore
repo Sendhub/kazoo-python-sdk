@@ -28,3 +28,4 @@ pip-log.txt
 
 # Ignore docs builds
 docs/_build
+.idea
