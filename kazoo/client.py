@@ -399,6 +399,28 @@ class Client(object):
         request.auth_required = True
 
         return self._execute_request(request, account_id=accountId)
+    
+    def list_cdrs(self, accountId, created_from=None, created_to=None):
+        """
+        Get the list of CDRs for a given account between two dates.
+
+        :param accountId: The kazoo Acconut ID to pull CDRs from.
+        :param created_from: the number of seconds since the gregorian epoch
+            after which to start fetching CDRs
+        :type created_from: int
+        :param created_to: the number of seconds since the gregorian epoch
+            before which to start fetching CDRs
+        :type created_to: int
+        :return: The API response payload data.
+        """
+        params = {}
+        if created_from:
+            params['created_from'] = created_from
+        if created_to:
+            params['created_to'] = created_to
+        request = KazooRequest("/accounts/{account_id}/cdrs", get_params=params)
+        request.auth_required = True
+        return self._execute_request(request, account_id=accountId)
 
     def list_child_accounts(self, parentAccountId):
         request = KazooRequest("/accounts/{account_id}/children")
