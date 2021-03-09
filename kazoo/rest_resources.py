@@ -63,7 +63,8 @@ class RestResource(object):
             if hasattr(view_desc, "has_key"):
                 result = view_desc
             else:
-                result = {"name": "get_" + view_desc, "path": view_desc}
+                vw_desc = view_desc["name"]
+                result = {"name": vw_desc, "path": vw_desc.split("_")[-1]}
             if "scope" not in result:
                 result["scope"] = "aggregate"
             if "method" not in result:

@@ -142,7 +142,7 @@ class RestClientMetaClass(type):
                 func_name, required_args_str, get_request_string)
         func = compile(func_definition, __file__, 'exec')
         d = {}
-        exec func in d
+        exec(func in d)
         return d[func_name]
 
 
