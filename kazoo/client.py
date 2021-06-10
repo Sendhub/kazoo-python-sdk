@@ -1,6 +1,6 @@
 import json
 import requests
-import kazoo.exceptions as exceptions
+import exceptions
 import logging
 from kazoo.request_objects import KazooRequest, UsernamePasswordAuthRequest, \
     ApiKeyAuthRequest
