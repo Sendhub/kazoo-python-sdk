@@ -405,3 +405,19 @@ class Client(object):
         request.auth_required = True
 
         return self._execute_request(request, account_id=parentAccountId)
+
+    def create_device(self, account_id, device_params):
+        """ method to make PUT call to Create a new device """
+        device_params['account_id'] = account_id
+        try:
+            request = KazooRequest("/v2/accounts/{account_id}/devices",
+                                   method="put")
+            response = self._execute_request(request,
+                                             **device_params)
+        except:
+            request = KazooRequest("/accounts/{account_id}/devices",
+                                   method="put")
+            response = self._execute_request(request,
+                                             **device_params)
+
+        return response
