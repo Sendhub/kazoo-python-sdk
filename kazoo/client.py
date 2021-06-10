@@ -1,6 +1,6 @@
 import json
 import requests
-import exceptions
+# from kazoo import exceptions
 import logging
 from kazoo.request_objects import KazooRequest, UsernamePasswordAuthRequest, \
     ApiKeyAuthRequest
@@ -354,7 +354,7 @@ class Client(object):
         return self.auth_token
 
     def _execute_request(self, request, **kwargs):
-        from exceptions import KazooApiAuthenticationError
+        from kazoo.exceptions import KazooApiAuthenticationError
 
         if request.auth_required:
             kwargs["token"] = self.auth_token
