@@ -5,7 +5,7 @@ import hashlib
 import logging
 import re
 import requests
-import urllib
+import urllib.parse
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.poolmanager import PoolManager
 import ssl
@@ -49,7 +49,7 @@ class KazooRequest(object):
     def _get_url(self, params, base_url):
         url = base_url + self._get_url_with_variables_replaced(params)
         if self.get_params:
-            return url + "?" + urllib.urlencode(self.get_params)
+            return url + "?" + urllib.parse.urlencode(self.get_params)
         return url
 
     def _get_url_with_variables_replaced(self, params):

@@ -1,6 +1,4 @@
-import json
-import requests
-# from kazoo import exceptions
+from kazoo.exceptions import KazooApiAuthenticationError
 import logging
 from kazoo.request_objects import KazooRequest, UsernamePasswordAuthRequest, \
     ApiKeyAuthRequest
@@ -8,6 +6,7 @@ from kazoo.rest_resources import RestResource
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+
 
 class RestClientMetaClass(type):
 
@@ -99,9 +98,9 @@ class RestClientMetaClass(type):
             required_args = rest_resource.required_args
         else:
             required_args = rest_resource.required_args + \
-                [rest_resource.object_arg]
+                            [rest_resource.object_arg]
         if extra_view_desc["method"] in ["put", "post"]:
-            requires_data=True
+            requires_data = True
         else:
             requires_data = False
         func = cls._generate_resource_func(
@@ -135,18 +134,23 @@ class RestClientMetaClass(type):
             get_request_string = get_req_templ.format(
                 resource_field_name, extra_view_name, get_request_args)
         if requires_data:
-            func_definition = "def {0}(self, {1}): return self._execute_request({2}, data=data)".format(
-                func_name, required_args_str, get_request_string)
+            func_definition = "def {0}(self, {1}): return " \
+                              "self._execute_request({2}, " \
+                              "data=data)".format(func_name,
+                                                  required_args_str,
+                                                  get_request_string)
         else:
-            func_definition = "def {0}(self, {1}): return self._execute_request({2})".format(
-                func_name, required_args_str, get_request_string)
+            func_definition = "def {0}(self, {1}): return " \
+                              "self._execute_request({2})" \
+                              "".format(func_name, required_args_str,
+                                        get_request_string)
         func = compile(func_definition, __file__, 'exec')
         d = {}
-        exec(func in d)
+        exec(func, d)
         return d[func_name]
 
 
-class Client(object):
+class Client(object, metaclass=RestClientMetaClass):
     """The interface to the Kazoo API
 
     This class should be initialized either with a username, password and
@@ -160,18 +164,21 @@ class Client(object):
 
     You can also initialize with a username and password combination: ::
 
-        >>>client = kazoo.Client(username="myusername", password="mypassword", account_name="my_account_name")
+        >>>client = kazoo.Client(username="myusername",
+        password="mypassword", account_name="my_account_name")
         >>>client.authenticate()
 
     API calls which require data take it in the form of a required argument
     called 'data' which is the last argument to the method. For example ::
 
-        >>>client.update_account(acct_id, {"name": "somename", "realm":"superfunrealm"})
+        >>>client.update_account(acct_id, {"name": "somename",
+        "realm":"superfunrealm"})
 
     Dictionaries and lists will automatically be converted to their appropriate
     representation so you can do things like: ::
 
-        >>>client.update_callflow(acct_id, callflow_id, {"flow":{"module":"somemodule"}})
+        >>>client.update_callflow(acct_id, callflow_id,
+        {"flow":{"module":"somemodule"}})
 
     Invalid data will result in an exception explaining the problem.
 
@@ -219,8 +226,7 @@ class Client(object):
         GET /accounts/{account_id}/users/hotdesk -> client.get_hotdesk(acct_id)
 
     """
-    __metaclass__ = RestClientMetaClass
-    base_url = "http://api.2600hz.com:8000/v1"
+    base_url = "http://api.2600hz.com:8000/v2/"
 
     _accounts_resource = RestResource("account",
                                       "/accounts/{account_id}",
@@ -250,7 +256,7 @@ class Client(object):
         "global_resource",
         "/accounts/{account_id}/global_resources/{resource_id}")
     _groups_resource = RestResource("group",
-                                   "/accounts/{account_id}/groups/{group_id}")
+                                    "/accounts/{account_id}/groups/{group_id}")
     _limits_resource = RestResource("limit",
                                     "/accounts/{account_id}/limits/{ignored}",
                                     methods=["list"])
@@ -270,7 +276,7 @@ class Client(object):
         "/accounts/{account_id}/phone_numbers/{phone_number}",
         methods=["list", "update", "delete"],
         extra_views=[
-            {"name":"activate_phone_number",
+            {"name": "activate_phone_number",
              "path": "activate",
              "scope": "object",
              "method": "put"},
@@ -354,7 +360,6 @@ class Client(object):
         return self.auth_token
 
     def _execute_request(self, request, **kwargs):
-        from kazoo.exceptions import KazooApiAuthenticationError
 
         if request.auth_required:
             kwargs["token"] = self.auth_token
@@ -362,7 +367,9 @@ class Client(object):
         try:
             return request.execute(self.base_url, **kwargs)
         except KazooApiAuthenticationError as e:
-            logger.error('Kazoo authentication failed. Attempting to re-authentication and retry: {}'.format(e))
+            logger.error(
+                'Kazoo authentication failed. '
+                'Attempting to re-authentication and retry: {}'.format(e))
             self._authenticated = False
             self.auth_token = None
             self.authenticate()
@@ -377,25 +384,32 @@ class Client(object):
         return self._execute_request(request)
 
     def create_phone_number(self, acct_id, phone_number):
-        request = KazooRequest("/accounts/{account_id}/phone_numbers/{phone_number}",
-                               method="put")
+        request = KazooRequest(
+            "/accounts/{account_id}/phone_numbers/{phone_number}",
+            method="put")
         return self._execute_request(request,
-                                     account_id=acct_id, phone_number=phone_number)
+                                     account_id=acct_id,
+                                     phone_number=phone_number)
 
     def get_phone_number(self, acct_id, phone_number):
-        request = KazooRequest("/accounts/{account_id}/phone_numbers/{phone_number}",
-                               method="get")
+        request = KazooRequest(
+            "/accounts/{account_id}/phone_numbers/{phone_number}",
+            method="get")
         return self._execute_request(request,
-                                     account_id=acct_id, phone_number=phone_number)
+                                     account_id=acct_id,
+                                     phone_number=phone_number)
 
-    def upload_phone_number_file(self, acct_id, phone_number, filename, file_obj):
+    def upload_phone_number_file(self, acct_id, phone_number, filename,
+                                 file_obj):
         """Uploads a file like object as part of a phone numbers documents"""
-        request = KazooRequest("/accounts/{account_id}/phone_numbers/{phone_number}",
-                               method="post")
+        request = KazooRequest(
+            "/accounts/{account_id}/phone_numbers/{phone_number}",
+            method="post")
         return self._execute_request(request, files={filename: file_obj})
 
     def list_devices_by_owner(self, accountId, ownerId):
-        request = KazooRequest("/accounts/{account_id}/devices", get_params={"filter_owner_id": ownerId})
+        request = KazooRequest("/accounts/{account_id}/devices",
+                               get_params={"filter_owner_id": ownerId})
         request.auth_required = True
 
         return self._execute_request(request, account_id=accountId)
@@ -409,15 +423,40 @@ class Client(object):
     def create_device(self, account_id, device_params):
         """ method to make PUT call to Create a new device """
         device_params['account_id'] = account_id
-        try:
-            request = KazooRequest("/v2/accounts/{account_id}/devices",
-                                   method="put")
-            response = self._execute_request(request,
-                                             **device_params)
-        except:
-            request = KazooRequest("/accounts/{account_id}/devices",
-                                   method="put")
-            response = self._execute_request(request,
-                                             **device_params)
+        request = KazooRequest("/accounts/{account_id}/devices",
+                               method="put")
+        response = self._execute_request(request,
+                                         **device_params)
 
+        return response
+
+    def create_account(self, account_params):
+        """Create an account"""
+        logging.info("create a new account with params : %s",
+                     str(account_params))
+        request = KazooRequest("/accounts", method="put")
+        response = self._execute_request(request,
+                                         data=account_params)
+        logging.info("Created new account in kazzo. response : %s",
+                     str(response))
+        return response
+
+    def create_callflow(self, account_id, conference_callflow):
+        """Creates a callflow"""
+        logging.info("create a callflow for account id %s",
+                     str(account_id))
+        request = KazooRequest("/accounts/{account_id}/callflows",
+                               method="put")
+        response = self._execute_request(request,
+                                         account_id=account_id,
+                                         data=conference_callflow)
+        return response
+
+    def delete_callflow(self, account_id, callflow_id):
+        """Delete a callflow"""
+        request = KazooRequest("/account/{account_id}/callflows/{callflow_id}",
+                               method="put")
+        response = self._execute_request(request,
+                                         account_id=account_id,
+                                         callflow_id=callflow_id)
         return response
