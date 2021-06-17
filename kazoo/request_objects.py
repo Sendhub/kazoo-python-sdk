@@ -40,8 +40,9 @@ class KazooRequest(object):
         param_names = param_regex.findall(path)
         return param_names
 
-    def _get_headers(self, token=None):
-        headers = {"Content-Type": "application/json"}
+    def _get_headers(self, token=None, content_type=None):
+        content_type = content_type if content_type else "application/json"
+        headers = {"Content-Type": content_type}
         if self.auth_required:
             headers["X-Auth-Token"] = token
         return headers
@@ -55,7 +56,8 @@ class KazooRequest(object):
     def _get_url_with_variables_replaced(self, params):
         return self.path.format(**params)
 
-    def execute(self, base_url, method=None, data=None, token=None, files=None, **kwargs):
+    def execute(self, base_url, method=None, data=None, token=None,
+                files=None, **kwargs):
         # if self.auth_required and token is None:
         #     error_message = ("This method requires an auth token, be sure to "
         #                      "call client.authenticate() before making API "
@@ -74,7 +76,8 @@ class KazooRequest(object):
         full_url = self._get_url(kwargs, base_url)
         logger.debug("Making {0} request to url {1}".
                      format(method, full_url.encode("utf-8")))
-        headers = self._get_headers(token=token)
+        headers = self._get_headers(token=token,
+                                    content_type=kwargs.get('content_type'))
         req_func = getattr(requests, method)
         kwargs = {}
         if data:
