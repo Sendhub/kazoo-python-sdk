@@ -460,3 +460,16 @@ class Client(object, metaclass=RestClientMetaClass):
                                          account_id=account_id,
                                          callflow_id=callflow_id)
         return response
+
+    def upload_media(self, account_id, media_id, media):
+        """upload a media file"""
+        request = KazooRequest("/account/{account_id}/media_id/{media_id}",
+                               method="post"
+                               )
+        response = self._execute_request(request,
+                                         account_id=account_id,
+                                         media_id=media_id,
+                                         data={'content_type': 'audio/mp3',
+                                               'files': media}
+                                         )
+        return response
