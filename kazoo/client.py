@@ -355,14 +355,20 @@ class Client(object, metaclass=RestClientMetaClass):
         """
         if not self._authenticated:
             self.auth_data = self.auth_request.execute(self.base_url)
-            self.auth_token = self.auth_data["auth_token"]
+            if isinstance(self.auth_data["auth_token"], bytes):
+                self.auth_token = self.auth_data["auth_token"].dicode('utf-8')
+            else:
+                self.auth_token = self.auth_data["auth_token"]
             self._authenticated = True
         return self.auth_token
 
     def _execute_request(self, request, **kwargs):
 
         if request.auth_required:
-            kwargs["token"] = self.auth_token
+            if isinstance(self.auth_token, bytes):
+                kwargs["token"] = self.auth_token.decode('utf-8')
+            else:
+                kwargs["token"] = self.auth_token
 
         try:
             return request.execute(self.base_url, **kwargs)
