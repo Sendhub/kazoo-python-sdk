@@ -1,9 +1,9 @@
 import json
-from kazoo import exceptions
-from kazoo.request_objects import KazooRequest, UsernamePasswordAuthRequest, \
-    ApiKeyAuthRequest
-import mock
 import unittest
+from unittest import mock
+
+from kazoo import exceptions
+from kazoo.request_objects import ApiKeyAuthRequest, KazooRequest, UsernamePasswordAuthRequest
 from tests import utils
 
 
@@ -31,8 +31,8 @@ class RequestObjectParameterTestCase(RequestTestCase):
     def test_url_contains_param(self):
         req_obj = self.create_req_obj(self.url)
         with mock.patch('requests.get') as mock_get:
-            mock_get.return_value.json = {"some_key": "some_val",
-                                          "status": "success"}
+            mock_get.return_value.json.return_value = {"some_key": "some_val",
+                                                        "status": "success"}
             req_obj.execute("http://testserver", param1="somevalue")
             mock_get.assert_called_with("http://testserver/testpath/somevalue",
                                         headers=mock.ANY)
@@ -106,20 +106,24 @@ class RequestObjectDataParamsTestCase(RequestTestCase):
 class RequestObjectErrorHandling(RequestTestCase):
 
     def setUp(self):
-        self.error_response = utils.load_fixture_as_dict(
-            "bad_auth_response.json")
+        self.error_response = {
+            "status": "error",
+            "error": "403",
+            "request_id": "1416cff416227360b706a3648a159641",
+            "message": "forbidden",
+        }
 
     def test_kazoo_api_error_raised_on_error_response(self):
         req_obj = KazooRequest("/somepath", auth_required=False)
         with mock.patch('requests.get') as mock_get:
             mock_response = mock.Mock()
-            mock_response.json = self.error_response
+            mock_response.json.return_value = self.error_response
             mock_get.return_value = mock_response
             with self.assertRaises(exceptions.KazooApiError) as cm:
                 req_obj.execute("http://testserver")
             expected_errors = "the error was {0}".format(
                                    self.error_response["message"])
-            self.assertTrue(expected_errors in cm.exception.message)
+            self.assertIn(expected_errors, str(cm.exception))
 
     def test_internal_server_error_unparseable(self):
         req_obj = KazooRequest("/somepath", auth_required=False)
@@ -127,11 +131,11 @@ class RequestObjectErrorHandling(RequestTestCase):
             mock_response = mock.Mock()
             mock_response.status_code = 500
             mock_response.headers = {"X-Request-Id": "sdfaskldfjaosdf"}
-            mock_response.json = None
+            mock_response.json = mock.Mock(return_value=None)
             mock_get.return_value = mock_response
             with self.assertRaises(exceptions.KazooApiError) as cm:
                 req_obj.execute("http://testserver")
-            self.assertTrue("Request ID" in cm.exception.message)
+            self.assertIn("Request ID", str(cm.exception))
 
     def test_internal_server_error_has_error_message_if_parseable(self):
         req_obj = KazooRequest("/somepath", auth_required=False)
@@ -139,13 +143,13 @@ class RequestObjectErrorHandling(RequestTestCase):
             mock_response = mock.Mock()
             mock_response.status_code = 500
             mock_response.headers = {"X-Request-Id": "sdfaskldfjaosdf"}
-            mock_response.json = utils.load_fixture_as_dict(
+            mock_response.json.return_value = utils.load_fixture_as_dict(
                 "bad_billing_status_response.json")
             mock_get.return_value = mock_response
             with self.assertRaises(exceptions.KazooApiError) as cm:
                 req_obj.execute("http://testserver")
             ex = cm.exception
-            self.assertTrue("Unable to continue due to billing" in ex.message)
+            self.assertIn("Unable to continue due to billing", str(ex))
 
 
     def test_invalid_data_displays_invalid_field_data(self):
@@ -153,7 +157,7 @@ class RequestObjectErrorHandling(RequestTestCase):
         with mock.patch('requests.get') as mock_get:
             mock_response = mock.Mock()
             mock_response.status_code = 400
-            mock_response.json = utils.load_fixture_as_dict(
+            mock_response.json.return_value = utils.load_fixture_as_dict(
                 "invalid_data_response.json")
             mock_get.return_value = mock_response
             with self.assertRaises(exceptions.KazooApiBadDataError) as cm:
@@ -169,11 +173,11 @@ class GetParametersTestCase(RequestTestCase):
         with mock.patch('requests.get') as mock_get:
             mock_response = mock.Mock()
             mock_response.status_code = 200
-            mock_response.json = {"result":"fake", "status":"success"}
+            mock_response.json.return_value = {"result":"fake", "status":"success"}
             mock_get.return_value = mock_response
             request.execute("http://testserver.com")
             mock_get.assert_called_with(
-                "http://testserver.com/somepath?two=2&one=1",
+                "http://testserver.com/somepath?one=1&two=2",
                 headers=mock.ANY
             )
 

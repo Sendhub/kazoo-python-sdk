@@ -58,16 +58,35 @@ class RestResource(object):
         return self.path.format(**params) + "/{0}".format(object_id)
 
     def _initialize_extra_view_descriptions(self, view_descs):
+        """
+        Normalize each view description into a dict with keys:
+            name, path, scope, and method.
+
+        Accepts either:
+            • a string  → {"name": "get_<string>", "path": <string>}
+            • a dict    → used directly, with defaults filled in
+        """
+
         self.extra_views = []
+
+        if not view_descs:
+            return
+
         for view_desc in view_descs:
-            if hasattr(view_desc, "has_key"):
-                result = view_desc
+            # Modern replacement for "has_key" check
+            if isinstance(view_desc, dict):
+                result = dict(view_desc)  # copy to avoid mutating caller data
             else:
-                result = {"name": "get_" + view_desc, "path": view_desc}
-            if "scope" not in result:
-                result["scope"] = "aggregate"
-            if "method" not in result:
-                result["method"] = "get"
+                # assume it's a string or something string-convertible
+                result = {
+                    "name": f"get_{view_desc}",
+                    "path": str(view_desc),
+                }
+
+            # fill in defaults if not provided
+            result.setdefault("scope", "aggregate")
+            result.setdefault("method", "get")
+
             self.extra_views.append(result)
 
     def get_list_request(self, **kwargs):

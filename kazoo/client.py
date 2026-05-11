@@ -1,9 +1,10 @@
 import json
-import requests
-import kazoo.exceptions as exceptions
 import logging
-from kazoo.request_objects import KazooRequest, UsernamePasswordAuthRequest, \
-    ApiKeyAuthRequest
+
+import requests
+
+import kazoo.exceptions as exceptions
+from kazoo.request_objects import ApiKeyAuthRequest, KazooRequest, UsernamePasswordAuthRequest
 from kazoo.rest_resources import RestResource
 
 logger = logging.getLogger(__name__)
@@ -142,11 +143,11 @@ class RestClientMetaClass(type):
                 func_name, required_args_str, get_request_string)
         func = compile(func_definition, __file__, 'exec')
         d = {}
-        exec func in d
+        exec(func, d)
         return d[func_name]
 
 
-class Client(object):
+class Client(object, metaclass=RestClientMetaClass):
     """The interface to the Kazoo API
 
     This class should be initialized either with a username, password and
@@ -219,7 +220,6 @@ class Client(object):
         GET /accounts/{account_id}/users/hotdesk -> client.get_hotdesk(acct_id)
 
     """
-    __metaclass__ = RestClientMetaClass
     base_url = "http://api.2600hz.com:8000/v1"
 
     _accounts_resource = RestResource("account",
@@ -354,7 +354,7 @@ class Client(object):
         return self.auth_token
 
     def _execute_request(self, request, **kwargs):
-        from exceptions import KazooApiAuthenticationError
+        from kazoo.exceptions import KazooApiAuthenticationError
 
         if request.auth_required:
             kwargs["token"] = self.auth_token

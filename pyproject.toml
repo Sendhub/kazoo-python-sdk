@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "kazoo-api"
 description = "SendHub Wrapper for the Kazoo API"
 readme = "README.rst"
-requires-python = ">=3.13"
+requires-python = ">=3.11"
 
 # Tell PEP-621 that version is provided dynamically
 dynamic = ["version"]

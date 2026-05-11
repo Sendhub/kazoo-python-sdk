@@ -1,25 +1,18 @@
 import base64
-import json
-from kazoo import exceptions
 import hashlib
+import json
 import logging
 import re
-import requests
-import urllib
-from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.poolmanager import PoolManager
-import ssl
+import urllib.parse
 
+import requests
+from requests.adapters import HTTPAdapter
+
+from kazoo import exceptions
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-class HttpsAdapterHack(HTTPAdapter):
-    def init_poolmanager(self, connections, maxsize, block=False):
-        self.poolmanager = PoolManager(num_pools=connections,
-                                       maxsize=maxsize,
-                                       block=block,
-                                       ssl_version=ssl.PROTOCOL_TLSv1)
 
 class KazooRequest(object):
     http_methods = ["get", "post", "put", "delete"]
@@ -49,18 +42,18 @@ class KazooRequest(object):
     def _get_url(self, params, base_url):
         url = base_url + self._get_url_with_variables_replaced(params)
         if self.get_params:
-            return url + "?" + urllib.urlencode(self.get_params)
+            return url + "?" + urllib.parse.urlencode(self.get_params)
         return url
 
     def _get_url_with_variables_replaced(self, params):
         return self.path.format(**params)
 
     def execute(self, base_url, method=None, data=None, token=None, files=None, **kwargs):
-        # if self.auth_required and token is None:
-        #     error_message = ("This method requires an auth token, be sure to "
-        #                      "call client.authenticate() before making API "
-        #                      "calls")
-        #     raise exceptions.AuthenticationRequiredError(error_message)
+        if self.auth_required and token is None:
+            error_message = ("This method requires an auth token, be sure to "
+                             "call client.authenticate() before making API "
+                             "calls")
+            raise exceptions.AuthenticationRequiredError(error_message)
         if method is None:
             method = self.method
         if method.lower() not in self.http_methods:
@@ -82,10 +75,6 @@ class KazooRequest(object):
         if files:
             kwargs["files"] = files
         raw_response = req_func(full_url, headers=headers, **kwargs)
-        if base_url.startswith('https'):
-            s = requests.Session()
-            s.mount('https://', HttpsAdapterHack())
-
         if raw_response.status_code == 500:
             self._handle_500_error(raw_response)
         response = raw_response.json()
@@ -141,7 +130,7 @@ class UsernamePasswordAuthRequest(KazooRequest):
 
     def _get_hashed_credentials(self):
         m = hashlib.md5()
-        m.update("{0}:{1}".format(self.username, self.password))
+        m.update("{0}:{1}".format(self.username, self.password).encode('utf-8'))
         return m.hexdigest()
 
 

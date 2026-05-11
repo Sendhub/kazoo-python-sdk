@@ -1,5 +1,6 @@
-import mock
 import unittest
+from unittest import mock
+
 from kazoo import Client
 
 
@@ -12,5 +13,5 @@ class AuthenticationTestCase(unittest.TestCase):
             mock_req_class.return_value = mock_req
             client = Client(api_key="dsfjasbfkasdf")
             client.authenticate()
-            mock_req.execute.assert_called_with(client.BASE_URL)
+            mock_req.execute.assert_called_with(client.base_url)
             self.assertEqual(client.auth_token, "authorizethis")
